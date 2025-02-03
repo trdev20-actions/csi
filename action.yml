@@ -21,8 +21,14 @@ inputs:
     required: false
     description: A github token to use instead of the default `github.token`
 
+outputs:
+  package-manager:
+    description: "The package manager used"
+    value: ${{ steps.detect-package-manager.outputs.package-manager }}
+
 runs:
   using: composite
+
 
   steps:
     - name: Generate token

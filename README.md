@@ -31,7 +31,7 @@ This GitHub Action automates the essential setup process for Node.js projects in
 
 ## Outputs
 
-> None
+- `package-manager`: The package manager used (npm, yarn, pnpm, bun)
 
 ## Example
 
