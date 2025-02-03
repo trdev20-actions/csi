@@ -1,0 +1,69 @@
+name: Node.js Setup And Dependencies Installation
+
+description: Checkout code -> Setup node -> Detect package manager -> Install deps
+
+inputs:
+  node-version:
+    type: number
+    required: false
+    default: 20
+    description: The version of Node.js to install
+  app-id:
+    type: number
+    required: false
+    description: A github app ID
+  private-key:
+    type: string
+    required: false
+    description: A private key for the github app
+  token:
+    type: string
+    required: false
+    description: A github token to use instead of the default `github.token`
+
+runs:
+  using: composite
+
+  steps:
+    - name: Generate token
+      if: ${{ ! inputs.token && inputs.app-id && inputs.private-key }}
+      id: generate-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.token || steps.generate-token.outputs.token || github.token }}
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Detect package manager
+      id: detect-package-manager
+      shell: bash
+      run: |
+        if [ -f "pnpm-lock.yaml" ]; then
+          echo "package-manager=pnpm" >> $GITHUB_OUTPUT
+        elif [ -f "yarn.lock" ]; then
+          echo "package-manager=yarn" >> $GITHUB_OUTPUT
+        elif [ -f "bun.lock" ]; then
+          echo "package-manager=bun" >> $GITHUB_OUTPUT
+        else
+          echo "package-manager=npm" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Install package manager
+      if: ${{ steps.detect-package-manager.outputs.package-manager != 'npm' }}
+      shell: bash
+      run: |
+        npm install -g ${{ steps.detect-package-manager.outputs.package-manager }}
+
+    - name: Install deps
+      shell: bash
+      run: |
+        ${{ steps.detect-package-manager.outputs.package-manager }} install
